@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./gradlew search-service:dB
+./run up -d search-service

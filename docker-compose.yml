@@ -1,0 +1,85 @@
+version: '2.1'
+
+services:
+  search-service:
+      image: search-service
+      ports:
+        - "8080"
+      links:
+        #- payment-service
+        - rabbitmq
+        - eureka-server
+        #- ops-server
+      environment:
+        RABBITMQ_HOST: rabbitmq
+        EUREKA_SERV: http://eureka-server:8761/eureka/
+        SERVICE_NAME: search-service
+        SERVICE_CHECK_HTTP: /health
+        SPRING_PROFILES_ACTIVE: consul
+        #SPRING_ZIPKIN_BASEURL: http://ops-server:9411
+        ADVERTISED_HOSTNAME: search-service
+      depends_on:
+        - eureka-server
+        - rabbitmq
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+        interval: 1m30s
+        timeout: 5s
+        retries: 3
+
+  gateway-server:
+    image: gateway-server
+    container_name: gateway-server
+    ports:
+      - "9000:9000"
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      EUREKA_SERV: http://eureka-server:8761/eureka/
+      SERVICE_NAME: gateway-server
+      SERVICE_CHECK_HTTP: /health
+      SPRING_PROFILES_ACTIVE: consul
+      #SPRING_ZIPKIN_BASEURL: http://ops-server:9411
+      ADVERTISED_HOSTNAME: gateway-server
+    links:
+      - search-service
+      #- payment-service
+      #- turbine-server
+      #- ops-server
+      - rabbitmq
+      - eureka-server
+    restart: always
+    depends_on:
+      - eureka-server
+      - rabbitmq
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 1m30s
+      timeout: 5s
+      retries: 3
+
+  eureka-server:
+      image: eureka-server
+      hostname: eureka
+      ports:
+        - "8761:8761"
+      environment:
+        RABBITMQ_HOST: rabbitmq
+        SERVICE_NAME: eureka-service
+        SERVICE_CHECK_HTTP: /health
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8761/"]
+        interval: 1m30s
+        timeout: 5s
+        retries: 3
+
+  rabbitmq:
+        image: rabbitmq:3-management
+        hostname: rabbitmq
+        ports:
+          - "5672:5672"
+          - "15672:15672"
+        healthcheck:
+          test: ["CMD", "rabbitmqctl", "status"]
+          interval: 10s
+          timeout: 5s
+          retries: 3

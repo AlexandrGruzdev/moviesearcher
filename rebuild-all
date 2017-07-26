@@ -1,0 +1,7 @@
+#!/bin/bash
+
+./gradlew eureka-server:dB
+./gradlew gateway-server:dB
+./gradlew search-service:dB
+
+./run up -d
