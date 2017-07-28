@@ -1,0 +1,3 @@
+#!/bin/bash
+./run up -d eureka-server
+./run up -d rabbitmq
